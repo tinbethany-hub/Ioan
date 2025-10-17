@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ioan 1–2 — Test Biblic (Cornilescu) — T/F + Alegere multiplă</title>
+<style>
+  :root { --bg:#f8fafc; --card:#ffffff; --text:#0f172a; --muted:#475569; --accent:#0ea5e9; --right:#16a34a; --wrong:#dc2626; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; background:var(--bg); color:var(--text); }
+  header { padding: 24px 16px; text-align: center; background: linear-gradient(180deg,#e0f2fe,#f8fafc); border-bottom: 1px solid #e2e8f0; }
+  h1 { margin: 0; font-size: clamp(1.4rem, 2vw + 1rem, 2rem); }
+  main { max-width: 900px; margin: 24px auto; padding: 0 16px 64px; }
+  .section-title { margin: 24px 0 12px; padding: 8px 12px; border-left: 4px solid var(--accent); background: #f0f9ff; border-radius: 8px; font-weight: 700; }
+  .card { background: var(--card); border:1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 8px 24px rgba(15,23,42,0.04); padding: 20px; margin-bottom: 16px; }
+  .meta { color: var(--muted); font-size: 0.95rem; margin-top: 6px; }
+  .q { margin: 0 0 12px; font-weight: 600; }
+  .choices { display: grid; gap: 8px; }
+  label.choice { display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: start; padding: 10px 12px; border:1px solid #e2e8f0; border-radius: 12px; cursor: pointer; }
+  input[type="radio"] { margin-top: 3px; accent-color: var(--accent); }
+  .actions { position: sticky; bottom: 0; background: rgba(248,250,252,0.85); backdrop-filter: blur(6px); padding: 12px 16px; border-top:1px solid #e2e8f0; }
+  .actions-inner { max-width: 900px; margin: 0 auto; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  button { border: 0; border-radius: 12px; padding: 10px 16px; font-weight: 600; cursor: pointer; }
+  button.primary { background: var(--accent); color: white; }
+  button.secondary { background: #e2e8f0; color: #0f172a; }
+  .result { display:none; }
+  .pill { display:inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.85rem; border:1px solid #e2e8f0; color: var(--muted); }
+  .explain { display:none; margin-top: 10px; padding: 10px 12px; border-left: 4px solid #e2e8f0; background:#f8fafc; border-radius: 8px; font-size: 0.95rem; }
+  .right { border-color: rgba(22,163,74,0.35) !important; background: #f0fdf4; }
+  .wrong { border-color: rgba(220,38,38,0.35) !important; background: #fef2f2; }
+  footer { text-align:center; color: var(--muted); padding: 24px 16px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Ioan 1–2 — Test Biblic (Cornilescu)</h1>
+  <div class="meta">Secțiunea I: 10 Adevărat/Fals (dificil) • Secțiunea a II‑a: 15 Întrebări cu alegere multiplă. Auto-corectare cu referințe.</div>
+</header>
+<main id="quiz"></main>
+
+<div class="actions">
+  <div class="actions-inner">
+    <button class="primary" id="submitBtn">Trimite răspunsurile</button>
+    <button class="secondary" id="resetBtn">Resetează</button>
+    <span class="pill" id="scorePill">Scor: 0 / 25</span>
+    <span class="pill result" id="percentPill">0%</span>
+  </div>
+</div>
+
+<footer>
+  <small>Evanghelia după Ioan 1–2 (Cornilescu). Creat ca pagină statică – poți găzdui oriunde (Drive, GitHub Pages, Netlify etc.).</small>
+</footer>
+
+<script>
+const TF = [
+  { q: "Ioan Botezătorul a fost trimis de Dumnezeu ca să mărturisească despre Lumină, pentru ca toți oamenii să creadă prin el.", choices: ["Adevărat","Fals"], correct: 0, ref: "Ioan 1:6–7" },
+  { q: "Cuvântul era în lume, și lumea a fost făcută prin El, dar lumea L-a cunoscut.", choices: ["Adevărat","Fals"], correct: 1, ref: "Ioan 1:10" }, // fals - nu L-a cunoscut
+  { q: "Ioan a spus despre Isus: „El este înaintea mea, pentru că era mai mare decât mine.”", choices: ["Adevărat","Fals"], correct: 1, ref: "Ioan 1:30" }, // fals - 'înainte de mine'
+  { q: "Duhul Sfânt S-a pogorât peste Isus în chip de porumbel și a rămas peste El.", choices: ["Adevărat","Fals"], correct: 0, ref: "Ioan 1:32" },
+  { q: "Filip era din Cana Galileii, din cetatea lui Andrei și Petru.", choices: ["Adevărat","Fals"], correct: 1, ref: "Ioan 1:44" }, // fals - Betsaida
+  { q: "La nunta din Cana, vasele de piatră folosite pentru apă erau rânduite după obiceiul spălărilor evreiești.", choices: ["Adevărat","Fals"], correct: 0, ref: "Ioan 2:6" },
+  { q: "Stăpânul ospețelui știa de unde venea vinul făcut de Isus.", choices: ["Adevărat","Fals"], correct: 1, ref: "Ioan 2:9" }, // fals - nu știa
+  { q: "După minunea din Cana, ucenicii Lui au crezut în El.", choices: ["Adevărat","Fals"], correct: 0, ref: "Ioan 2:11" },
+  { q: "În Templu, Isus a spus vânzătorilor de porumbei: „Ridicați acestea de aici și nu faceți din Casa Tatălui Meu o casă de negustorie.”", choices: ["Adevărat","Fals"], correct: 0, ref: "Ioan 2:16" },
+  { q: "Isus nu Se încredea în oameni, pentru că nu cunoștea inimile lor.", choices: ["Adevărat","Fals"], correct: 1, ref: "Ioan 2:24–25" } // fals - pentru că îi cunoștea pe toți
+];
+
+const MC = [
+  {
+    q: "Ce cuvânt descrie relația Cuvântului cu Dumnezeu la începutul Evangheliei după Ioan?",
+    choices: ["Unitate","Părtășie","Era cu Dumnezeu"],
+    correct: 2,
+    ref: "Ioan 1:1"
+  },
+  {
+    q: "Ce nu a biruit lumina, potrivit Ioan 1:5?",
+    choices: ["Întunericul","Moartea","Necredința"],
+    correct: 0,
+    ref: "Ioan 1:5"
+  },
+  {
+    q: "Cine au fost trimiși de la Ierusalim să-l întrebe pe Ioan Botezătorul cine este?",
+    choices: ["Cărturarii și fariseii","Preoți și leviți","Preoți și bătrâni ai poporului"],
+    correct: 1,
+    ref: "Ioan 1:19"
+  },
+  {
+    q: "Ce a mărturisit Ioan că nu este, atunci când a fost întrebat?",
+    choices: ["Nu este profetul Ilie","Nu este Mesia","Ambele variante"],
+    correct: 2,
+    ref: "Ioan 1:20–21"
+  },
+  {
+    q: "Cine a zis: „Eu sunt glasul celui ce strigă în pustie”?",
+    choices: ["Ioan Botezătorul","Isaia","Isus"],
+    correct: 0,
+    ref: "Ioan 1:23"
+  },
+  {
+    q: "Cei trimiși de farisei l-au întrebat pe Ioan de ce botează dacă nu este Hristos. Ce a răspuns Ioan?",
+    choices: ["„Botez cu apă”","„Botez pentru pocăință”","„Botez în numele Celui ce vine”"],
+    correct: 0,
+    ref: "Ioan 1:26"
+  },
+  {
+    q: "Cum L-a descris Ioan pe Isus după ce a spus: „Iată Mielul lui Dumnezeu”?",
+    choices: ["„Cel ce ridică păcatul lumii”","„Cel ce va judeca lumea”","„Cel ce va lumina toate neamurile”"],
+    correct: 0,
+    ref: "Ioan 1:29"
+  },
+  {
+    q: "Ce i-a spus Isus lui Natanael că a făcut înainte de a-l chema Filip?",
+    choices: ["„Te-am văzut rugându-te.”","„Te-am văzut sub smochin.”","„Te-am văzut mergând la templu.”"],
+    correct: 1,
+    ref: "Ioan 1:48"
+  },
+  {
+    q: "Ce i-a promis Isus lui Natanael că va vedea în viitor?",
+    choices: ["Minuni și semne","Cerul deschis și pe îngerii lui Dumnezeu suindu-se și coborându-se peste Fiul omului","Învierea celor morți"],
+    correct: 1,
+    ref: "Ioan 1:51"
+  },
+  {
+    q: "A câta zi după chemarea lui Natanael a avut loc nunta din Cana?",
+    choices: ["A treia zi","A doua zi","A șaptea zi"],
+    correct: 0,
+    ref: "Ioan 2:1"
+  },
+  {
+    q: "Ce i-a spus Isus mamei Sale când ea I-a spus că nu mai au vin?",
+    choices: ["„Ce am eu a face cu tine?”","„Femeie, ce am eu a face cu tine? Încă n-a sosit ceasul Meu.”","„Nu te îngrijora, voi face minunea.”"],
+    correct: 1,
+    ref: "Ioan 2:4"
+  },
+  {
+    q: "Câte măsuri încăpea fiecare vas de piatră folosit la nuntă?",
+    choices: ["Două sau trei măsuri","Cinci sau șase măsuri","O măsură și jumătate"],
+    correct: 0,
+    ref: "Ioan 2:6"
+  },
+  {
+    q: "Cum numește Ioan minunea din Cana?",
+    choices: ["Prima Lui minune publică","Începutul semnelor Lui","Mărturia slavei Sale"],
+    correct: 1,
+    ref: "Ioan 2:11"
+  },
+  {
+    q: "Ce a făcut Isus din funii înainte de a-i izgoni pe vânzători din Templu?",
+    choices: ["O frânghie de legat animalele","Un bici","O coardă pentru cort"],
+    correct: 1,
+    ref: "Ioan 2:15"
+  },
+  {
+    q: "Ce au înțeles ucenicii despre cuvintele lui Isus: „Stricați Templul acesta și în trei zile îl voi ridica”?",
+    choices: ["Că vorbea despre trupul Său","Că se referă la templul din Ierusalim","Că era o profeție despre vremea sfârșitului"],
+    correct: 0,
+    ref: "Ioan 2:21–22"
+  }
+];
+
+const DATA = [
+  { type: "section", title: "Secțiunea I — Adevărat/Fals (10 întrebări)" },
+  ...TF.map(o => ({...o, type:"tf"})),
+  { type: "section", title: "Secțiunea a II‑a — Alegere multiplă (15 întrebări)" },
+  ...MC.map(o => ({...o, type:"mc"}))
+];
+
+const quiz = document.getElementById('quiz');
+
+function renderQuiz() {
+  quiz.innerHTML = "";
+  let indexCounter = 1;
+  DATA.forEach((item, idx) => {
+    if (item.type === "section") {
+      const h = document.createElement('div');
+      h.className = 'section-title';
+      h.textContent = item.title;
+      quiz.appendChild(h);
+      return;
+    }
+    const card = document.createElement('section');
+    card.className = 'card';
+    const q = document.createElement('p');
+    q.className = 'q';
+    q.textContent = (indexCounter) + ". " + item.q + " (" + item.ref + ")";
+    card.appendChild(q);
+
+    const choices = document.createElement('div');
+    choices.className = 'choices';
+    item.choices.forEach((c, cidx) => {
+      const id = `q${indexCounter}_c${cidx}`;
+      const label = document.createElement('label');
+      label.className = 'choice';
+      const input = document.createElement('input');
+      input.type = 'radio';
+      input.name = 'q' + indexCounter;
+      input.value = cidx;
+      input.id = id;
+      const span = document.createElement('span');
+      span.textContent = c;
+      label.appendChild(input);
+      label.appendChild(span);
+      choices.appendChild(label);
+    });
+    card.appendChild(choices);
+
+    const explain = document.createElement('div');
+    explain.className = 'explain';
+    explain.id = 'exp' + indexCounter;
+    explain.innerHTML = "<strong>Răspuns corect:</strong> " + item.choices[item.correct] + " <em>(" + item.ref + ")</em>";
+    card.appendChild(explain);
+
+    quiz.appendChild(card);
+    indexCounter++;
+  });
+}
+
+function grade() {
+  let score = 0;
+  const cards = [...document.querySelectorAll('.card')];
+  cards.forEach((card, idx) => {
+    const selected = card.querySelector('input[type="radio"]:checked');
+    const labels = [...card.querySelectorAll('label.choice')];
+    labels.forEach(l => l.classList.remove('right','wrong'));
+    const exp = card.querySelector('.explain');
+    const correct = labels.findIndex((_, i) => i === parseInt(card.querySelector('input[type="radio"]').name.replace('q',''))); // placeholder compute later
+    // compute correct using DATA by index of question in flow
+  });
+
+  // We need to recompute score based on DATA in order
+  let i = 0;
+  let questionNum = 1;
+  for (const item of DATA) {
+    if (item.type === "section") continue;
+    const card = document.querySelectorAll('.card')[i];
+    const labels = [...card.querySelectorAll('label.choice')];
+    const selected = card.querySelector('input[type="radio"]:checked');
+    const exp = card.querySelector('.explain');
+    labels.forEach(l => l.classList.remove('right','wrong'));
+    if (selected) {
+      const val = parseInt(selected.value,10);
+      if (val === item.correct) {
+        score++;
+        labels[val].classList.add('right');
+      } else {
+        labels[val].classList.add('wrong');
+        labels[item.correct].classList.add('right');
+      }
+    } else {
+      labels[item.correct].classList.add('right');
+    }
+    exp.style.display = 'block';
+    i++;
+    questionNum++;
+  }
+
+  document.getElementById('scorePill').textContent = `Scor: ${score} / ${i}`;
+  const pct = Math.round((score / i) * 100);
+  const pctPill = document.getElementById('percentPill');
+  pctPill.textContent = pct + "%";
+  pctPill.style.display = 'inline-block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetQuiz() {
+  renderQuiz();
+  const total = DATA.filter(d => d.type !== "section").length;
+  document.getElementById('scorePill').textContent = `Scor: 0 / ${total}`;
+  const pctPill = document.getElementById('percentPill');
+  pctPill.textContent = "0%";
+  pctPill.style.display = 'none';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+renderQuiz();
+document.getElementById('submitBtn').addEventListener('click', grade);
+document.getElementById('resetBtn').addEventListener('click', resetQuiz);
+</script>
+</body>
+</html>
