@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Quiz Interactiv — Ioan 3–4 (Cornilescu) • Auto-Notare</title>
+<style>
+  :root{
+    --bg:#f8fafc; --card:#ffffff; --ink:#0f172a; --muted:#475569;
+    --accent:#2563eb; --good:#16a34a; --bad:#dc2626; --warn:#d97706;
+    --border:#e5e7eb; --chip:#eef2ff; --chip-ink:#3730a3;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:2rem;background:var(--bg);color:var(--ink);
+       font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Arial;
+       line-height:1.45}
+  .container{max-width:1100px;margin:0 auto;}
+  h1{font-size:clamp(1.6rem,2.4vw,2.3rem);margin:.1rem 0 .4rem}
+  .subtitle{color:var(--muted);margin-bottom:1rem}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;
+        padding:1rem 1.25rem;margin:1rem 0;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+  .section-title{display:flex;align-items:center;justify-content:space-between;
+        border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-bottom:.75rem}
+  .pill{background:var(--chip);color:var(--chip-ink);padding:.2rem .55rem;border-radius:999px;font-size:.8rem}
+  .q{border:1px solid var(--border);border-radius:12px;padding:.75rem .75rem;margin:.65rem 0;background:#fff;position:relative}
+  .prompt{font-weight:600;margin-bottom:.35rem}
+  .choices{display:grid;gap:.35rem}
+  .score{font-weight:800}
+  .good{color:var(--good)} .bad{color:var(--bad)} .warn{color:var(--warn)}
+  .match-wrap{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  .match-col{background:#f9fafb;border:1px solid var(--border);border-radius:12px;padding:.75rem}
+  .match-item{background:#fff;border:1px solid var(--border);border-radius:10px;padding:.55rem .6rem;margin:.4rem 0;position:relative}
+  select{padding:.35rem .55rem;border-radius:10px;border:1px solid var(--border)}
+  .ref{color:var(--muted);font-size:.92rem}
+  .correct{outline:2px solid var(--good)}
+  .incorrect{outline:2px solid var(--bad)}
+  .tick{position:absolute;right:.6rem;top:.6rem;font-weight:900}
+  .tick.ok{color:var(--good)} .tick.no{color:var(--bad)}
+  details summary{cursor:pointer;font-weight:700}
+  .key{background:#f1f5f9;border:1px solid var(--border);padding:.75rem;border-radius:12px;white-space:pre-wrap;
+       font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:.95em}
+  .controls{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+  button{background:var(--accent);color:#fff;border:none;padding:.6rem 1rem;border-radius:12px;font-weight:700;cursor:pointer}
+  button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent);font-weight:700}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Quiz Interactiv — Ioan 3–4</h1>
+    <div class="subtitle">Versiunea Cornilescu • Auto-notare (instant) • <span style="background:#e2e8f0;padding:.15rem .5rem;border-radius:999px">factual</span></div>
+    <div class="controls">
+      <button class="ghost" id="btnReset">Resetează tot</button>
+      <button class="ghost" id="btnToggleKey">Arată/ascunde cheia</button>
+      <span id="score" class="score"></span>
+    </div>
+  </header>
+
+  <section class="card">
+    <div class="section-title"><h2>I. Adevărat / Fals (15)</h2><span class="pill">1p / item</span></div>
+    <div id="tfContainer"></div>
+  </section>
+
+  <section class="card">
+    <div class="section-title"><h2>II. Întrebări grilă (15)</h2><span class="pill">1p / item</span></div>
+    <div id="mcContainer"></div>
+  </section>
+
+  <section class="card">
+    <div class="section-title"><h2>III. Asociere — Set 1 (Dialogul cu Nicodim)</h2><span class="pill">5 perechi</span></div>
+    <p class="ref">Coloana dreaptă se <strong>amestecă aleator</strong> la fiecare reîncărcare. Pe stânga apar <em>referințe</em> (Cornilescu).</p>
+    <div class="match-wrap">
+      <div class="match-col" id="m1Left"></div>
+      <div class="match-col" id="m1Right"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-title"><h2>IV. Asociere — Set 2 (Întâlnirea cu femeia samariteană)</h2><span class="pill">5 perechi</span></div>
+    <p class="ref">Coloana dreaptă se <strong>amestecă aleator</strong> la fiecare reîncărcare. Pe stânga apar <em>referințe</em> (Cornilescu).</p>
+    <div class="match-wrap">
+      <div class="match-col" id="m2Left"></div>
+      <div class="match-col" id="m2Right"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <details id="keyBlock">
+      <summary>Cheie de răspuns (ascunsă implicit)</summary>
+      <div class="key" id="answerKey"></div>
+    </details>
+  </section>
+</div>
+
+<script>
+// -------- Data (TF + MC) --------
+const TF = [
+  { t: "Nicodim a venit la Isus noaptea. (Ioan 3:2)", a: true },
+  { t: "Isus i-a spus lui Nicodim că trebuie să se nască „din apă și din foc.” (Ioan 3:5)", a: false },
+  { t: "Nicodim era căpetenie a iudeilor. (Ioan 3:1)", a: true },
+  { t: "Isus a spus că „nimeni nu s-a suit în cer, afară de Cel ce S-a pogorât din cer.” (Ioan 3:13)", a: true },
+  { t: "Ioan Botezătorul a spus: „El trebuie să crească, iar eu să mă micșorez.” (Ioan 3:30)", a: true },
+  { t: "Isus boteza personal mai mulți ucenici decât Ioan. (Ioan 4:2)", a: false },
+  { t: "Isus a trebuit să treacă prin Samaria ca să ajungă în Galileea. (Ioan 4:4)", a: true },
+  { t: "Femeia samariteană a venit la fântână la ceasul al șaselea. (Ioan 4:6)", a: true },
+  { t: "Femeia samariteană avea un soț și cinci fii. (Ioan 4:18)", a: false },
+  { t: "Isus i-a spus femeii: „Cine va bea din apa aceasta nu va mai înseta niciodată.” (Ioan 4:14)", a: true },
+  { t: "Ucenicii s-au mirat că Isus vorbea cu o femeie. (Ioan 4:27)", a: true },
+  { t: "Mulți samariteni au crezut în Isus din pricina mărturiei femeii. (Ioan 4:39)", a: true },
+  { t: "Isus a rămas trei zile în cetatea samaritenilor. (Ioan 4:40)", a: false },
+  { t: "Fiul dregătorului s-a vindecat în ceasul al șaptelea. (Ioan 4:52)", a: true },
+  { t: "Aceasta a fost cea dintâi minune a lui Isus în Galileea. (Ioan 4:54)", a: false }
+];
+
+const MC = [
+  { q: "Cine era Nicodim? (Ioan 3:1)", c: ["Căpetenie a iudeilor","Mare preot","Dregător roman"], a: 0 },
+  { q: "Cu ce a asemănat Isus lucrarea Duhului Sfânt? (Ioan 3:8)", c: ["Cu vântul","Cu ploaia","Cu focul"], a: 0 },
+  { q: "Cu ce a comparat Isus ridicarea Sa pe cruce? (Ioan 3:14)", c: ["Cu șarpele înălțat de Moise în pustie","Cu rugul aprins","Cu jertfa lui Avraam"], a: 0 },
+  { q: "De ce a trimis Dumnezeu pe Fiul Său în lume? (Ioan 3:17)", c: ["Ca lumea să fie mântuită prin El","Ca să judece lumea","Ca să aducă o nouă lege"], a: 0 },
+  { q: "Ce a spus Ioan Botezătorul despre Isus? (Ioan 3:30)", c: ["„El trebuie să crească, iar eu să mă micșorez.”","„El botează cu apă.”","„El nu vine din cer.”"], a: 0 },
+  { q: "De ce a plecat Isus din Iudeea spre Galileea? (Ioan 4:1–3)", c: ["Pentru că fariseii au auzit că El face mai mulți ucenici decât Ioan","Pentru că era prigonit de saduchei","Pentru că ucenicii nu mai voiau să boteze"], a: 0 },
+  { q: "Cum s-a mirat femeia samariteană? (Ioan 4:9)", c: ["Că un iudeu îi cere apă","Că Isus nu avea găleată","Că Isus știa numele ei"], a: 0 },
+  { q: "Ce fel de apă a promis Isus? (Ioan 4:14)", c: ["Apă din fântâna lui Iacov","Apă vie","Apă de la Iordan"], a: 1 },
+  { q: "Ce i-a spus Isus femeii despre soțul ei? (Ioan 4:17–18)", c: ["„Bine ai zis că n-ai bărbat.”","„Du-te, cheamă-l și vino înapoi.”","Ambele de mai sus"], a: 2 },
+  { q: "Ce au făcut samaritenii după ce L-au rugat pe Isus să rămână? (Ioan 4:40)", c: ["L-au alungat","L-au primit și El a rămas două zile","I-au cerut minuni"], a: 1 },
+  { q: "Unde locuia dregătorul al cărui fiu era bolnav? (Ioan 4:46)", c: ["În Capernaum","În Betania","În Ierihon"], a: 0 },
+  { q: "Ce i-a spus Isus dregătorului? (Ioan 4:50)", c: ["„Fiul tău trăiește.”","„Credința ta te-a mântuit.”","„Du-te, și adu-l aici.”"], a: 0 },
+  { q: "Ce s-a întâmplat în clipa aceea? (Ioan 4:53)", c: ["Fiul s-a vindecat","Dregătorul a căzut la pământ","Slugile au venit la Isus"], a: 0 },
+  { q: "Ce a făcut dregătorul după ce a aflat că fiul său s-a făcut bine? (Ioan 4:53)", c: ["A crezut el și toată casa lui","A adus daruri la Templu","A devenit ucenic al lui Ioan"], a: 0 },
+  { q: "Cum numește Ioan această minune? (Ioan 4:54)", c: ["Cel dintâi semn","Al doilea semn făcut de Isus în Galileea","O minune neînsemnată"], a: 1 }
+];
+
+// -------- Matching (with references on left) --------
+const MATCH1 = {
+  left: [
+    { t: "„Trebuie să vă nașteți din nou.” (Ioan 3:7)", key: "Condiția pentru a vedea Împărăția lui Dumnezeu" },
+    { t: "„Vântul suflă unde vrea.” (Ioan 3:8)", key: "Ilustrarea lucrării Duhului Sfânt" },
+    { t: "„Șarpele înălțat de Moise.” (Ioan 3:14)", key: "Prefigurarea ridicării lui Hristos" },
+    { t: "„Dumnezeu a iubit lumea...” (Ioan 3:16)", key: "Motivația trimiterii Fiului Său" },
+    { t: "„Lumina a venit în lume.” (Ioan 3:19)", key: "Reacția oamenilor față de adevăr și faptele lor" }
+  ],
+  right: [
+    "Condiția pentru a vedea Împărăția lui Dumnezeu",
+    "Ilustrarea lucrării Duhului Sfânt",
+    "Prefigurarea ridicării lui Hristos",
+    "Motivația trimiterii Fiului Său",
+    "Reacția oamenilor față de adevăr și faptele lor"
+  ]
+};
+
+const MATCH2 = {
+  left: [
+    { t: "Femeia vine la fântână la ceasul al șaselea. (Ioan 4:6)", key: "Fântâna lui Iacov, lângă Sihar" },
+    { t: "Isus cere apă. (Ioan 4:7)", key: "Începutul dialogului spiritual" },
+    { t: "„Apa vie”. (Ioan 4:10–14)", key: "Simbolul vieții veșnice și al Duhului" },
+    { t: "„Du-te, cheamă-ți bărbatul.” (Ioan 4:16)", key: "Descoperirea vieții personale" },
+    { t: "Mărturisirea samaritenilor. (Ioan 4:42)", key: "„Acesta este cu adevărat Hristosul, Mântuitorul lumii.”" }
+  ],
+  right: [
+    "Fântâna lui Iacov, lângă Sihar",
+    "Începutul dialogului spiritual",
+    "Simbolul vieții veșnice și al Duhului",
+    "Descoperirea vieții personale",
+    "„Acesta este cu adevărat Hristosul, Mântuitorul lumii.”"
+  ]
+};
+
+// -------- Helpers --------
+function shuffle(a){
+  const arr = a.slice();
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
+
+function updateScore(){
+  const scoreEl = document.getElementById("score");
+  const total = TF.length + MC.length + MATCH1.left.length + MATCH2.left.length;
+  let good = 0;
+
+  // Count TF
+  TF.forEach((x,i)=>{
+    const sel = document.querySelector(`input[name="tf${i}"]:checked`);
+    if(sel && String(x.a) === sel.value) good++;
+  });
+  // Count MC
+  MC.forEach((x,i)=>{
+    const sel = document.querySelector(`input[name="mc${i}"]:checked`);
+    if(sel && Number(sel.value) === x.a) good++;
+  });
+  // Matching
+  document.querySelectorAll("#m1Left .match-item, #m2Left .match-item").forEach(item=>{
+    const sel = item.querySelector("select");
+    if(sel && sel.value && sel.value === item.dataset.correct) good++;
+  });
+
+  const pct = Math.round(100*good/total);
+  scoreEl.className = "score " + (pct>=80 ? "good" : (pct>=60 ? "warn" : "bad"));
+  scoreEl.textContent = `Scor: ${good}/${total} (${pct}%)`;
+}
+
+function markState(container){
+  container.querySelectorAll(".q").forEach((q,qi)=>{
+    const r = q.querySelector("input[type='radio']:checked");
+    if(!r){ q.classList.remove("correct","incorrect"); q.querySelector(".tick")?.remove(); return; }
+    const expected = container.id==="tfContainer" ? TF[qi].a : MC[qi].a;
+    const ok = container.id==="tfContainer" ? (String(expected)===r.value) : (Number(r.value)===expected);
+    q.classList.toggle("correct", ok);
+    q.classList.toggle("incorrect", !ok);
+    q.querySelector(".tick")?.remove();
+    const t = document.createElement("div");
+    t.className = "tick " + (ok?"ok":"no");
+    t.textContent = ok ? "✓" : "✗";
+    q.appendChild(t);
+  });
+}
+
+function renderTF(){
+  const wrap = document.getElementById("tfContainer");
+  wrap.innerHTML = "";
+  TF.forEach((x,i)=>{
+    const div = document.createElement("div");
+    div.className = "q";
+    div.innerHTML = `<div class="prompt">${i+1}. ${x.t}</div>
+      <div class="choices">
+        <label><input type="radio" name="tf${i}" value="true"> Adevărat</label>
+        <label><input type="radio" name="tf${i}" value="false"> Fals</label>
+      </div>`;
+    wrap.appendChild(div);
+  });
+  wrap.addEventListener("change", ()=>{ markState(wrap); updateScore(); });
+}
+
+function renderMC(){
+  const wrap = document.getElementById("mcContainer");
+  wrap.innerHTML = "";
+  MC.forEach((x,i)=>{
+    const div = document.createElement("div");
+    div.className = "q";
+    let h = `<div class="prompt">${i+1}. ${x.q}</div><div class="choices">`;
+    x.c.forEach((ch,j)=> h += `<label><input type="radio" name="mc${i}" value="${j}"> ${ch}</label>`);
+    h += `</div>`;
+    div.innerHTML = h;
+    wrap.appendChild(div);
+  });
+  wrap.addEventListener("change", ()=>{ markState(wrap); updateScore(); });
+}
+
+// Create matching columns with randomized right side and compute answer mapping
+function renderMatch(set, leftId, rightId, baseKey){
+  const Lwrap = document.getElementById(leftId);
+  const Rwrap = document.getElementById(rightId);
+  Lwrap.innerHTML = ""; Rwrap.innerHTML = "";
+
+  const letters = "ABCDE".split("");
+
+  // Shuffle right descriptors
+  const shuffledRight = shuffle(set.right);
+  // Map letters to shuffled descriptors for display
+  shuffledRight.forEach((txt,i)=>{
+    const d = document.createElement("div");
+    d.className = "match-item";
+    d.innerHTML = `<b>${letters[i]}.</b> ${txt}`;
+    Rwrap.appendChild(d);
+  });
+
+  // Build a reverse map: descriptor -> letter
+  const descToLetter = {};
+  shuffledRight.forEach((txt,i)=> descToLetter[txt] = letters[i]);
+
+  // Render left with selects and references + instant marking
+  set.left.forEach((item,i)=>{
+    const row = document.createElement("div");
+    row.className = "match-item";
+    const correctLetter = descToLetter[item.key]; // letter that matches this left item
+    row.dataset.correct = correctLetter;
+    row.innerHTML = `${i+1}. ${item.t} &nbsp;
+      <select id="${baseKey}${i}">
+        <option value="">— alege —</option>
+        ${letters.map(L=>`<option value="${L}">${L}</option>`).join("")}
+      </select>
+      <div class="tick" aria-hidden="true"></div>`;
+    Lwrap.appendChild(row);
+  });
+
+  Lwrap.addEventListener("change", (e)=>{
+    if(e.target.tagName.toLowerCase()!=="select") return;
+    const item = e.target.closest(".match-item");
+    const ok = e.target.value && e.target.value === item.dataset.correct;
+    item.classList.toggle("correct", ok);
+    item.classList.toggle("incorrect", !ok);
+    const tick = item.querySelector(".tick");
+    tick.textContent = ok ? "✓" : "✗";
+    tick.className = "tick " + (ok?"ok":"no");
+    updateScore();
+  });
+}
+
+function resetAll(){
+  document.querySelectorAll('input[type="radio"]').forEach(r=>r.checked=false);
+  document.querySelectorAll('select').forEach(s=> s.value="");
+  document.querySelectorAll(".correct,.incorrect").forEach(el=> el.classList.remove("correct","incorrect"));
+  document.querySelectorAll(".tick").forEach(t=> t.textContent="");
+  document.getElementById("score").textContent="";
+}
+
+function toggleKey(){
+  const d = document.getElementById("keyBlock");
+  d.open = !d.open;
+}
+
+function buildKey(){
+  const lines = [];
+  lines.push("I. Adevărat/Fals");
+  TF.forEach((x,i)=> lines.push(`${i+1}. ${x.a ? "Adevărat" : "Fals"}`));
+  lines.push("");
+  lines.push("II. Grilă (A/B/C)");
+  MC.forEach((x,i)=> lines.push(`${i+1}. ${["A","B","C"][x.a]}`));
+  lines.push("");
+
+  // Build legends reflecting the current randomization
+  const m1Right = Array.from(document.querySelectorAll("#m1Right .match-item")).map(d=>d.textContent.trim());
+  const m2Right = Array.from(document.querySelectorAll("#m2Right .match-item")).map(d=>d.textContent.trim());
+  const letters = "ABCDE".split("");
+
+  lines.push("III. Asociere — Set 1");
+  MATCH1.left.forEach((item,i)=>{
+    const row = document.querySelector(`#m1Left .match-item:nth-child(${i+1})`);
+    lines.push(`${i+1} → ${row.dataset.correct}`);
+  });
+  lines.push("Legendă Set 1: " + m1Right.map((txt,i)=> `${letters[i]}=${txt.replace(/^[A-E]\.\s*/,'')}`).join(" | "));
+
+  lines.push("");
+  lines.push("IV. Asociere — Set 2");
+  MATCH2.left.forEach((item,i)=>{
+    const row = document.querySelector(`#m2Left .match-item:nth-child(${i+1})`);
+    lines.push(`${i+1} → ${row.dataset.correct}`);
+  });
+  lines.push("Legendă Set 2: " + m2Right.map((txt,i)=> `${letters[i]}=${txt.replace(/^[A-E]\.\s*/,'')}`).join(" | "));
+
+  document.getElementById("answerKey").textContent = lines.join("\n");
+}
+
+// ----- Init -----
+renderTF();
+renderMC();
+renderMatch(MATCH1, "m1Left", "m1Right", "m1");
+renderMatch(MATCH2, "m2Left", "m2Right", "m2");
+buildKey();
+
+document.getElementById("btnReset").addEventListener("click", ()=>{ resetAll(); updateScore(); });
+document.getElementById("btnToggleKey").addEventListener("click", toggleKey);
+</script>
+</body>
+</html>
